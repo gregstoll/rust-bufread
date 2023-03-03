@@ -3,6 +3,9 @@ use std::{fs::File, io::{Read, BufReader, BufRead}};
 const FILENAME: &str = "word_frequency.txt";
 
 fn get_count_from_line(s: &str) -> u64 {
+    if s.is_empty() {
+        return 0;
+    }
     let mut parts = s.split_ascii_whitespace();
     let _ = parts.next();
     parts.next().unwrap().parse::<u64>().unwrap()
@@ -37,6 +40,26 @@ pub fn read_buffered_allocate_string_every_time() -> u64 {
     for line in reader.lines() {
         let s = line.unwrap();
         total += get_count_from_line(&s);
+    }
+    total
+}
+
+pub fn read_buffered_reuse_string() -> u64 {
+    let file = File::open(FILENAME).expect("Failed to open file!");
+    let mut reader = BufReader::new(file);
+
+    let mut string = String::new();
+    let mut total = 0u64;
+    // TODO yuck
+    while {
+        let this = reader.read_line(&mut string);
+        match this {
+            Err(_) => false,
+            Ok(x) => (|x| x > 0)(x),
+        }
+    } {
+        total += get_count_from_line(&string);
+        string.clear();
     }
     total
 }
