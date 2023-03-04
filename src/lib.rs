@@ -3,12 +3,12 @@ use std::{fs::File, io::{Read, BufReader, BufRead, self}};
 const FILENAME: &str = "word_frequency.txt";
 
 pub fn read_unbuffered_one_character_at_a_time() -> io::Result<u64> {
-    let mut f = File::open(FILENAME)?;
-    let len = f.metadata().expect("Failed to get file metadata").len() as usize;
+    let mut file = File::open(FILENAME)?;
+    let len = file.metadata().expect("Failed to get file metadata").len() as usize;
     let mut v: Vec<u8> = Vec::new();
     v.resize(len, 0u8);
     for index in 0..len {
-        f.read_exact(&mut v[index..(index+1)])?;
+        file.read_exact(&mut v[index..(index+1)])?;
     }
     let s = String::from_utf8(v).expect("file is not UTF-8?");
     let mut total = 0u64;
