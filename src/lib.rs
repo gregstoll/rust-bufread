@@ -1,4 +1,4 @@
-use std::{fs::File, io::{Read, BufReader, BufRead}};
+use std::{fs::File, io::{Read, BufReader, BufRead, self}};
 
 const FILENAME: &str = "word_frequency.txt";
 
@@ -11,55 +11,54 @@ fn get_count_from_line(s: &str) -> u64 {
     parts.next().unwrap().parse::<u64>().unwrap()
 }
 
-pub fn read_unbuffered_one_character_at_a_time() -> u64 {
-    let mut f = File::open(FILENAME).expect("Failed to open file!");
-    let mut current_line = Vec::<u8>::with_capacity(100);
-    let mut index = 0;
-    //TODO
-    /*while f.read_exact(&mut current_line[index]) {
-    }*/
-    return 0u64;
-}
-
-pub fn read_whole_string_into_memory() -> u64 {
-    let mut file = File::open(FILENAME).expect("Failed to open file!");
-    let mut s = String::new();
-    file.read_to_string(&mut s).unwrap();
+pub fn read_unbuffered_one_character_at_a_time() -> io::Result<u64> {
+    let mut f = File::open(FILENAME)?;
+    let len = f.metadata().expect("Failed to get file metadata").len() as usize;
+    let mut v: Vec<u8> = Vec::new();
+    v.resize(len, 0u8);
+    for index in 0..len {
+        f.read_exact(&mut v[index..(index+1)])?;
+    }
+    let s = String::from_utf8(v).expect("file is not UTF-8?");
     let mut total = 0u64;
     for line in s.lines() {
         total += get_count_from_line(line);
     }
-    total
+    Ok(total)
 }
 
-pub fn read_buffered_allocate_string_every_time() -> u64 {
-    let file = File::open(FILENAME).expect("Failed to open file!");
+pub fn read_buffer_whole_string_into_memory() -> io::Result<u64> {
+    let mut file = File::open(FILENAME)?;
+    let mut s = String::new();
+    file.read_to_string(&mut s)?;
+    let mut total = 0u64;
+    for line in s.lines() {
+        total += get_count_from_line(line);
+    }
+    Ok(total)
+}
+
+pub fn read_buffered_allocate_string_every_time() -> io::Result<u64> {
+    let file = File::open(FILENAME)?;
     let reader = BufReader::new(file);
 
     let mut total = 0u64;
     for line in reader.lines() {
-        let s = line.unwrap();
+        let s = line?;
         total += get_count_from_line(&s);
     }
-    total
+    Ok(total)
 }
 
-pub fn read_buffered_reuse_string() -> u64 {
-    let file = File::open(FILENAME).expect("Failed to open file!");
+pub fn read_buffered_reuse_string() -> io::Result<u64> {
+    let file = File::open(FILENAME)?;
     let mut reader = BufReader::new(file);
 
     let mut string = String::new();
     let mut total = 0u64;
-    // TODO yuck
-    while {
-        let this = reader.read_line(&mut string);
-        match this {
-            Err(_) => false,
-            Ok(x) => (|x| x > 0)(x),
-        }
-    } {
+    while reader.read_line(&mut string).unwrap() > 0 {
         total += get_count_from_line(&string);
         string.clear();
     }
-    total
+    Ok(total)
 }
